@@ -25,7 +25,7 @@ namespace HaseUndIgel.AI
         /// <summary>
         /// оценочная "стоимость" прохождения клетки
         /// </summary>
-        public const int CellPenalty = 7;
+        public const int CellPenalty = 4;
 
         /// <summary>
         /// построить дерево решения и выбрать из него первый ход
@@ -216,7 +216,7 @@ namespace HaseUndIgel.AI
         {
             // морковки идут в плюс
             var spielerCarrots = pov.CarrotsSpare;
-            var score = spielerCarrots;
+            var score = 0;
             var percentMade = 0f;
 
             var tokens = board.GetSpielerTokens(board.spielers.FindIndex(s => s.Id == pov.Id));
@@ -237,7 +237,6 @@ namespace HaseUndIgel.AI
                 {
                     var delta = pos * Board.CarrotsPerPosition;
                     spielerCarrots += delta;
-                    score += delta;
                 }
 
                 // учесть морковки, получаемые за капусту
@@ -245,11 +244,14 @@ namespace HaseUndIgel.AI
                 {
                     var delta = pos * Board.CarrotsPerCabbage;
                     spielerCarrots += delta;
-                    score += delta;
                 }
 
                 percentMade += range / (float) board.cells.Length;
             }
+
+            score += spielerCarrots;
+            if (tokens.Length == 2)
+                score += spielerCarrots;
 
             // если после хода моркови - кот наплакал...
             if (spielerCarrots < 13)

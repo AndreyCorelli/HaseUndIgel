@@ -45,7 +45,7 @@ namespace HaseUndIgel.AI
             if (root.children == null || root.children.Count == 0) 
                 return null;
             if (root.children.Count == 1) return root.children[0];
-            var rootScore = root.children.Select(c => new Cortege2<SolutionNode, int>(c, GetBranchScore(c, false))).ToList();
+            var rootScore = root.children.Select(c => new Cortege2<SolutionNode, int>(c, GetBranchScore(c, true))).ToList();
 
             // выбрать наибольший из меньших результатов
             var ind = rootScore.IndexOfMin(s => -s.b);
