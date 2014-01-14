@@ -64,7 +64,9 @@ namespace HaseUndIgel.GUI
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            
             if (Board == null || tokenSelectors == null) return;
+            if (Board.Endspiel) return;
             if (tokenSelectors.Length > 1 && Board.selectedTokenIndex < 0)
                 return; // фишка не выбрана
 
@@ -107,6 +109,7 @@ namespace HaseUndIgel.GUI
             if (e.Button != MouseButtons.Left) return;
 
             // сделать ход?
+            if (Board.Endspiel) return;
             if (selectedCellIndex > 0 && Board.selectedTokenIndex >= 0)
             {
                 var gaveCarrot = false;

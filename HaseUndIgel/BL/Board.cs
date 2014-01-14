@@ -316,7 +316,7 @@ namespace HaseUndIgel.BL
             if (cell.CellType == CellType.Finish)
             {
                 var oldPosition = 1 + tokens.Count(t => t.Position > oldPos);
-                var carrotsMax = oldPosition*CarrotsPerFinish;
+                var carrotsMax = oldPosition * CarrotsPerFinish;
                 if (spieler.CarrotsSpare > carrotsMax)
                 {
                     error = "Избыток моркови для финиша (" + carrotsMax + ")";
@@ -356,6 +356,8 @@ namespace HaseUndIgel.BL
         private string MakeTurnWoSwitchSpieler(int spielerIndex, int tokenIndex,
             int targetPosition, bool gaveCarrot, bool simulatorTurn)
         {
+            if (Endspiel) return "";
+
             var spieler = spielers[spielerIndex];
             var token = tokens[tokenIndex];
             var oldPos = token.Position;
@@ -415,9 +417,22 @@ namespace HaseUndIgel.BL
             var message = string.Empty;
             if (cell.CellType == CellType.Finish)
             {
-                Endspiel = true;
-                Winner = spieler;
-                message = spieler.Name + " финишировал!";
+                token.Position = targetPosition;
+                var spielerFinished = tokens.Length == spielers.Length;
+                if (!spielerFinished)
+                {
+                    // все фишки игрока финишировали?
+                    var spielerTokens = GetSpielerTokens(spielerIndex);
+                    if (spielerTokens.All(t => t.Position == spielers.Length - 1))
+                        spielerFinished = true;
+                }
+
+                if (spielerFinished)
+                {
+                    Endspiel = true;
+                    Winner = spieler;
+                    message = spieler.Name + " финишировал!";
+                }
             }
 
             var minusCarrots = carrotsNeeded - additionalCarrots;

@@ -51,14 +51,19 @@ namespace HaseUndIgel.AI
             var ind = rootScore.IndexOfMin(s => -s.b);
 
             var rt = rootScore[ind].a;
-            var sb = new StringBuilder(rt.token + ":" + rt.targetCell + ";");
+            var sb = new StringBuilder(rt + "; ");
             while (rt.children.Count > 0)
             {
                 rt = rt.children[rt.bestChild];
-                sb.Append(rt.token + ":" + rt.targetCell + ";");
+                sb.Append(rt + "; ");
             }
 
-            return rootScore[ind].a;
+            var nodeBest = rootScore[ind].a;
+            if (nodeBest.gaveCarrot)
+            {
+                bool fuckup = true;
+            }
+            return nodeBest;
         }
 
         private static int GetBranchScore(SolutionNode branchRoot, bool chooseMin)
@@ -88,6 +93,11 @@ namespace HaseUndIgel.AI
                 ci++;
             }
             return extrScore;
+        }
+
+        public override string ToString()
+        {
+            return "t[" + token + "]->" + targetCell + (gaveCarrot ? "(-m)" : "") + "/" + score + "/";
         }
     }    
 }
