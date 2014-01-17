@@ -7,6 +7,8 @@ namespace HaseUndIgel.BL
 {
     public class Board
     {
+        public static Cell[] debugCells;
+
         #region Constants
 
         public const int CarrotsPerHedgehog = 10;
@@ -97,6 +99,7 @@ namespace HaseUndIgel.BL
                     new Cell(CellType.Carrot),
                     new Cell(CellType.Finish),
                 };
+            debugCells = cells;
 
             if (spielersTotal == 2)
             {
@@ -197,6 +200,7 @@ namespace HaseUndIgel.BL
             var oldPos = token.Position;
             var cellsPassed = targetPosition - oldPos;
             var cell = cells[targetPosition];
+            var spielerTokens = GetSpielerTokens(spielerIndex);
 
             // стоит на месте?
             if (cellsPassed == 0)
@@ -217,6 +221,12 @@ namespace HaseUndIgel.BL
                 }
 
                 // стоит на капусте?
+                if (spielerTokens.Any(t => cells[t.Position].CellType == CellType.Cabbage &&
+                                           !spieler.GiveCabbage))
+                {
+                    error = "Нужно уйти с капусты";
+                    return false;
+                }
                 if (cell.CellType == CellType.Cabbage) 
                 {
                     if (spieler.GiveCabbage)
@@ -227,7 +237,7 @@ namespace HaseUndIgel.BL
                             return false; // недостижимо
                         }
                         var tokenPosition = 1 + tokens.Count(t => t.Position > oldPos);
-                        deltaCarrots = tokenPosition*CarrotsPerCabbage;
+                        deltaCarrots = tokenPosition * CarrotsPerCabbage;
                         return true;
                     }
                     error = "Нужно уйти с капусты";
@@ -236,7 +246,8 @@ namespace HaseUndIgel.BL
             }
 
             // клетка занята?
-            if (tokens.Any(t => t.Position == targetPosition))
+            if (tokens.Any(t => t.Position == targetPosition &&
+                targetPosition != cells.Length - 1))
             {
                 error = "Клетка занята";
                 return false;    
@@ -270,7 +281,7 @@ namespace HaseUndIgel.BL
             }
             
             // должен уйти с капусты другой фишкой?
-            var otherToken = GetSpielerTokens(spielerIndex).FirstOrDefault(t => t != token);
+            var otherToken = spielerTokens.FirstOrDefault(t => t != token);
             if (otherToken != null)
             {
                 var onCabbage = cells[otherToken.Position].CellType == CellType.Cabbage;

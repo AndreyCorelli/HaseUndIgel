@@ -8,7 +8,16 @@ namespace HaseUndIgel.AI
 {
     public static class ComputerMind
     {
+        /// <summary>
+        /// макс. индекс! полухода (хода)
+        /// т.е. 3 означает 4 полухода
+        /// </summary>
         public const int MaxLevel = 3;
+
+        /// <summary>
+        /// после этого хода возможные варианты начинают резаться
+        /// </summary>
+        public const int MaxLevelToTryAllPaths = 3;
 
         /// <summary>
         /// штраф за нахождение на клетке зайца
@@ -20,7 +29,7 @@ namespace HaseUndIgel.AI
         /// (умножается после прохождения первой трети игры на 2, затем,
         /// по прохождению второй трети игры - еще на два)
         /// </summary>
-        public const int CabbagePenalty = 22;
+        public const int CabbagePenalty = 50;
 
         /// <summary>
         /// оценочная "стоимость" прохождения клетки
@@ -49,8 +58,8 @@ namespace HaseUndIgel.AI
                 return; // пат?
 
             // таки сделать ход
-            board.MakeTurn(turnRoot.Value.token,
-                           turnRoot.Value.targetCell, turnRoot.Value.gaveCarrot, false);
+            board.MakeTurn(turnRoot.token,
+                           turnRoot.targetCell, turnRoot.gaveCarrot, false);
         }
 
         private static void MakeProbableTurn(Board board, SolutionNode root, Spieler pov,
@@ -219,99 +228,46 @@ namespace HaseUndIgel.AI
             return ownScore - maxOtherScore;
         }
 
-        public static int GetSpielerScore2(Board board, Spieler pov)
-        {
-            // морковки идут в плюс
-            var spielerCarrots = pov.CarrotsSpare;
-            var score = 0;
-            var percentMade = 0f;
+        //public static int GetSpielerScore(Board board, Spieler pov)
+        //{
+        //    var score = 0;
 
-            var povIndex = board.spielers.FindIndex(s => s.Id == pov.Id);
-            var tokens = board.GetSpielerTokens(povIndex);
-            foreach (var token in tokens)
-            {
-                var range = token.Position;
-                var curCell = board.cells[token.Position];
-                // заяц в минус
-                if (curCell.CellType == CellType.Hare)
-                    score -= HarePenalty;
+        //    // в морковках учтем те, что получит игрок после хода
+        //    var spielerCarrots = pov.CarrotsSpare;
+        //    var cellsPassed = 0;
 
-                // позиция в гонке...
-                var ownPos = token.Position;
-                var pos = board.tokens.Count(t => t.Position > ownPos) + 1;
-                if (curCell.CellType == CellType.Number && pos == curCell.Points)
-                {
-                    var delta = pos * Board.CarrotsPerPosition;
-                    spielerCarrots += delta;
-                }
+        //    // фишки игрока (1 или 2)
+        //    var tokens = board.GetSpielerTokens(board.spielers.FindIndex(s => s.Id == pov.Id));
+        //    foreach (var token in tokens)
+        //    {
+        //        cellsPassed += token.Position;
+        //        var curCell = board.cells[token.Position];
+        //        // заяц в минус
+        //        if (curCell.CellType == CellType.Hare)
+        //            score -= HarePenalty;
 
-                // учесть морковки, получаемые за капусту
-                if (pov.GiveCabbage && curCell.CellType == CellType.Cabbage)
-                {
-                    var delta = pos * Board.CarrotsPerCabbage;
-                    spielerCarrots += delta;
-                }
+        //        // бонус за номерную карту и позицию в гонке
+        //        var ownPos = token.Position;
+        //        var pos = board.tokens.Count(t => t.Position > ownPos) + 1;
+        //        if (curCell.CellType == CellType.Number && pos == curCell.Points)
+        //        {
+        //            var delta = pos * Board.CarrotsPerPosition;
+        //            spielerCarrots += delta;
+        //        }
 
-                percentMade += range / (float)board.cells.Length;
-            }
+        //        // учесть морковки, получаемые за капусту
+        //        if (pov.GiveCabbage && curCell.CellType == CellType.Cabbage)
+        //        {
+        //            var delta = pos * Board.CarrotsPerCabbage;
+        //            spielerCarrots += delta;
+        //        }
+        //    }
 
-            score += spielerCarrots;
-            if (tokens.Length == 2)
-                score += spielerCarrots;
+        //    // посчитаем, сколько клеток игрок сможет пройти за свои морковки
 
-            // относительная позиция в гонке
-            for (var i = 0; i < board.spielers.Length; i++)
-            {
-                if (i == povIndex) continue;
-                var spilTokens = board.GetSpielerTokens(i);
-                var rangeRival = spilTokens.Sum(t => t.Position) / (board.cells.Length*spilTokens.Length);
-                var deltaRange = percentMade - rangeRival;
-                score += (int)(deltaRange * spilTokens.Length * 2);
-            }
 
-            // если после хода моркови - кот наплакал...
-            if (spielerCarrots < 16)
-                score -= 10;
-            if (spielerCarrots < 13)
-                score -= 20;
-            if (spielerCarrots < 3)
-                score -= 30;
-            if (spielerCarrots < 2)
-                score -= 30;
-            if (spielerCarrots < 1)
-                score -= 30000;
-
-            // штраф за капусту
-            if (board.tokens.Length > board.spielers.Length)
-                percentMade /= 2f;
-            if (pov.CabbageSpare > 0)
-            {
-                var k = percentMade > 0.85f ? 10 : percentMade > 0.65f ? 6 : percentMade > 0.4f ? 3 : percentMade > 0.28f ? 2 : 1;
-                score -= (int)Math.Round(k * CabbagePenalty * (pov.CabbageSpare - (pov.GiveCabbage ? 0.7f : 0f)));
-            }
-
-            // не слишком ли много моркови?
-            if (percentMade > 0.5f) // && spielerCarrots > 40)
-            {
-                var carrotsToFinish = tokens.Sum(t => Board.GetCarrotsPerCells(
-                    board.cells.Length - t.Position));
-                if (carrotsToFinish < (spielerCarrots + Board.CarrotsPerFinish))
-                    score -= pov.CarrotsSpare * 10;
-                else
-                {
-                    if (spielerCarrots >= carrotsToFinish)
-                        score += 300; // морковки хватит, чтобы финишировать
-                    else
-                    {
-                        // учесть соотношение моркови на руках / моркови до финиша
-                        var progressPercent = spielerCarrots / (double)carrotsToFinish;
-                        score += (int)Math.Round(350 * Math.Pow(progressPercent, 0.75 / percentMade));
-                    }
-                }
-            }
-
-            return score;
-        }
+        //    return score;
+        //}
 
         public static int GetSpielerScore(Board board, Spieler pov)
         {
@@ -367,10 +323,17 @@ namespace HaseUndIgel.AI
             // штраф за капусту
             if (board.tokens.Length > board.spielers.Length)
                 percentMade /= 2f;
-            if (pov.CabbageSpare > 0)
+
+            if (pov.CabbageSpare > 0 && !pov.GiveCabbage)
             {
+                var cabbageToCount = pov.GiveCabbage ? pov.CabbageSpare - 1 : pov.CabbageSpare;
                 var k = percentMade > 0.85f ? 10 : percentMade > 0.65f ? 6 : percentMade > 0.4f ? 3 : percentMade > 0.28f ? 2 : 1;
-                score -= (int) Math.Round(k * CabbagePenalty * (pov.CabbageSpare - (pov.GiveCabbage ? 0.7f : 0f)));
+                if (spielerCarrots > 50 && cabbageToCount > 1)
+                    score -= spielerCarrots;
+                else if (spielerCarrots > 100)
+                    score -= spielerCarrots;
+
+                score -= k * CabbagePenalty * pov.CabbageSpare;
             }
 
             // не слишком ли много моркови?
