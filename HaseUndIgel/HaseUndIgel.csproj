@@ -39,6 +39,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\FastGrid.dll</HintPath>
     </Reference>
+    <Reference Include="log4net">
+      <HintPath>lib\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -98,8 +101,10 @@
     <Compile Include="Util\Cortege.cs" />
     <Compile Include="Util\ExecutablePath.cs" />
     <Compile Include="Util\Formatter.cs" />
+    <Compile Include="Util\Logger.cs" />
     <Compile Include="Util\MathExtensions.cs" />
     <Compile Include="Util\PenStorage.cs" />
+    <Compile Include="Util\TimeLogger.cs" />
     <EmbeddedResource Include="GiveOrTakeCarrotForm.resx">
       <DependentUpon>GiveOrTakeCarrotForm.cs</DependentUpon>
     </EmbeddedResource>

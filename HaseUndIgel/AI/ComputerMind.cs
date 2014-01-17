@@ -12,7 +12,7 @@ namespace HaseUndIgel.AI
         /// макс. индекс! полухода (хода)
         /// т.е. 3 означает 4 полухода
         /// </summary>
-        public const int MaxLevel = 3;
+        public const int MaxLevel = 5;
 
         /// <summary>
         /// после этого хода возможные варианты начинают резаться
@@ -43,36 +43,46 @@ namespace HaseUndIgel.AI
         {
             if (board.Endspiel) return;
 
-            // получить все возможное множество ходов и заполнить
-            // дерево решений
-            var root = new SolutionNode
-                {
-                    children = new List<SolutionNode>()
-                };
-            /*var boards = */
-            MakeProbableTurn(board, root, board.CurrentSpieler, 0);
-            
+            SolutionNode root;
+            SolutionNode.nodesCount = 0;
+            using (new TimeLogger("Turns took"))
+            {
+                // получить все возможное множество ходов и заполнить
+                // дерево решений
+                root = new SolutionNode
+                    {
+                        children = new List<SolutionNode>()
+                    };
+
+                MakeAllProbableTurns(board, root, board.CurrentSpieler, 0);
+            }
+
             // "решить" дерево и сделать ход
-            var turnRoot = SolutionNode.ResolveTree(root);
-            if (turnRoot == null)
-                return; // пат?
+            SolutionNode turnRoot;
+            using (new TimeLogger("Resolving tree took"))
+            {
+                turnRoot = SolutionNode.ResolveTree(root, board.CurrentSpieler);
+                if (turnRoot == null)
+                    return; // пат?
+            }
+            Logger.Info(SolutionNode.nodesCount.ToString() + " nodes tested");
 
             // таки сделать ход
             board.MakeTurn(turnRoot.token,
                            turnRoot.targetCell, turnRoot.gaveCarrot, false);
         }
 
-        private static void MakeProbableTurn(Board board, SolutionNode root, Spieler pov,
+        private static void MakeAllProbableTurns(Board board, SolutionNode root, Spieler pov,
             int level)
         {
             if (board.Endspiel) return;
             
             // если игрок пропускает ход...
-            if (board.CurrentSpieler.Freezed)
+            var spieler = board.CurrentSpieler;
+            if (spieler.Freezed)
             {
                 var newRoot = new SolutionNode
                     {
-                        score = root.score,
                         targetCell = -1,
                         children = new List<SolutionNode>()
                     };
@@ -95,7 +105,7 @@ namespace HaseUndIgel.AI
 
             // если игрок стоит на капусте одной из фишек -
             // отдать капусту, получить моркву и пропустить ход
-            if (board.CurrentSpieler.GiveCabbage)
+            if (spieler.GiveCabbage)
             {
                 // добавить узел и спуститься ниже
                 var spielerTokens = board.GetSpielerTokens(board.currentSpielerIndex);
@@ -120,7 +130,7 @@ namespace HaseUndIgel.AI
                 // (отдать 10 морковок и получить 10 морковок)
                 if (cell.CellType == CellType.Carrot)
                 {
-                    if (board.CurrentSpieler.CarrotsSpare > Board.CarrotsPerStay)
+                    if (spieler.CarrotsSpare > Board.CarrotsPerStay)
                     {
                         // если есть излишек моркови
                         var carrotsToFinish = tokenIndicies.Sum(i => Board.GetCarrotsPerCells(
@@ -129,27 +139,58 @@ namespace HaseUndIgel.AI
                         if (carrotsToFinish < (board.CurrentSpieler.CarrotsSpare + 10))
                             MakeTurnAndRootDown(board, root, pov, level, tokenIndex, token.Position, true);
                     }
-                    // вариант с получением моркови
-                    MakeTurnAndRootDown(board, root, pov, level, tokenIndex, token.Position, false);
+                    
+                    // вариант с получением моркови интересен только при ее недостатке
+                    // стараемся урезать дерево...
+                    if (level <= MaxLevelToTryAllPaths || spieler.CarrotsSpare < 20)
+                        MakeTurnAndRootDown(board, root, pov, level, tokenIndex, token.Position, false);
                 }
 
                 // пробуем ход на ежа (ход назад)
                 if (token.Position > 1)
                 {
-                    for (var i = token.Position - 1; i > 0; i--)
+                    // если ход на ежа не особо имеет смысл, а мы уже
+                    // стараемся урезать дерево...
+                    if (level <= MaxLevelToTryAllPaths || spieler.CarrotsSpare < 20)
                     {
-                        if (board.cells[i].CellType != CellType.Hedgehog) continue;
-                        // йож занят?
-                        var igelPos = i;
-                        if (board.tokens.Any(t => t.Position == igelPos)) break;
-                        // пробуем ход на ежа
-                        MakeTurnAndRootDown(board, root, pov, level, tokenIndex, i, false);
+                        for (var i = token.Position - 1; i > 0; i--)
+                        {
+                            if (board.cells[i].CellType != CellType.Hedgehog) continue;
+                            // йож занят?
+                            var igelPos = i;
+                            if (board.tokens.Any(t => t.Position == igelPos)) break;
+                            // пробуем ход на ежа
+                            MakeTurnAndRootDown(board, root, pov, level, tokenIndex, i, false);
+                        }
                     }
                 }
 
                 // пробуем ход на каждую последующую клетку, пока хватает моркови
                 for (var i = token.Position + 1; i < board.cells.Length; i++)
                 {
+                    // стараемся урезать дерево...
+                    // короткие либо слишком длинные ходы м.б. неинтересны
+                    if (level > MaxLevelToTryAllPaths)
+                    {
+                        var isOk = board.cells[i].CellType == CellType.Cabbage ||
+                                    i == board.cells.Length - 1;
+                        if (!isOk)
+                        {
+                            // если моркови много, а ход короткий и не на финиш и не на капусту - 
+                            // - нафиг такой ход
+                            var deltaCells = i - token.Position;
+                            if ((spieler.CarrotsSpare > 9 && deltaCells == 1)
+                                || (spieler.CarrotsSpare > 15 && deltaCells == 2))
+                                continue;
+
+                            // если ход отнимает слишком много морквы
+                            var carrotsRequired = Board.GetCarrotsPerCells(deltaCells);
+                            var deltaCarrot = spieler.CarrotsSpare - carrotsRequired;
+                            if (deltaCarrot < 15 && spieler.CarrotsSpare > 55)
+                                continue;
+                        }
+                    }
+
                     // клетка занята?
                     var cellPos = i;
                     if (cellPos < board.cells.Length - 1)
@@ -173,7 +214,7 @@ namespace HaseUndIgel.AI
                     }
 
                     // для хода не хватает моркови?
-                    if (deltaCarrots >= board.CurrentSpieler.CarrotsSpare)
+                    if (deltaCarrots >= spieler.CarrotsSpare)
                         break;
                 }
             }
@@ -192,24 +233,24 @@ namespace HaseUndIgel.AI
         {
             var newRoot = new SolutionNode
             {
-                score = GetScore(nextBoard, pov),
                 targetCell = (short)targetCell,
                 children = new List<SolutionNode>(),
                 gaveCarrot = gaveCarrot,
-                token = (short)tokenIndex,
-                /*level = recursionLevel*/
+                token = (short)tokenIndex                
             };
             root.children.Add(newRoot);
             // рекурсивно углубиться
             if (recursionLevel < MaxLevel)
-                MakeProbableTurn(nextBoard, newRoot, pov, recursionLevel + 1);
+                MakeAllProbableTurns(nextBoard, newRoot, pov, recursionLevel + 1);
+            if (newRoot.children.Count == 0)
+                newRoot.Board = nextBoard; // для листа запоминаем доску
         }
 
         /// <summary>
         /// оценить ситуацию на доске с позиции pov
         /// выдать численную оценку - чем больше, тем лучше
         /// </summary>        
-        private static int GetScore(Board board, Spieler pov)
+        public static int GetScore(Board board, Spieler pov)
         {
             if (board.Winner == pov) return int.MaxValue;
 
