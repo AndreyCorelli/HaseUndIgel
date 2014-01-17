@@ -246,11 +246,59 @@ namespace HaseUndIgel.AI
                 newRoot.Board = nextBoard; // для листа запоминаем доску
         }
 
+        public static int GetScore(Board board, Spieler pov)
+        {
+            if (board.Winner == pov) return int.MaxValue;
+            
+            var score = 0;
+
+            var povTokens = board.GetSpielerTokens(board.spielers.FindIndex(s => s.Id == pov.Id));
+            var povPosition = povTokens.Sum(t => t.Position);
+            var povCabbage = pov.GiveCabbage ? pov.CabbageSpare - 1 : pov.CabbageSpare;
+            var povCarrots = pov.CarrotsSpare;
+            if (pov.GiveCabbage)
+                povCarrots += 10;
+            // относительная позиция
+            var relPos = povPosition / (double) board.cells.Length / povTokens.Length;
+
+            for (var i = 0; i < board.spielers.Length; i++)
+            {
+                var spieler = board.spielers[i];
+                if (board.Winner == spieler) return int.MinValue;
+
+                if (spieler == pov) continue;
+                var spielerTokens = board.GetSpielerTokens(i);
+                
+                // разница в расстоянии
+                var deltaCells = povPosition - spielerTokens.Sum(t => t.Position);
+                score += deltaCells;
+                
+                // и в моркови
+                var deltaCarrots = povCarrots -
+                                   (spieler.GiveCabbage ? spieler.CarrotsSpare + 10 : spieler.CarrotsSpare);
+                var deltaCarrotsScore = Math.Sign(deltaCarrots) * (int)Math.Round(Math.Sqrt(deltaCarrots));
+                score += deltaCarrotsScore;
+
+                // и в капусте
+                var spielerCabbage = spieler.GiveCabbage ? spieler.CabbageSpare - 1 : spieler.CabbageSpare;
+                var deltaCabbage = spielerCabbage - povCabbage;
+                var kCabbage = relPos < 0.25 ? 20 : relPos < 0.45 ? 35 : relPos < 0.65 ? 65 : 140;
+                score += deltaCabbage * kCabbage;
+            }
+
+            // штраф за низкую степень свободы
+            if (povCarrots < 12)
+                score -= (povCarrots - 14) * (povCarrots - 14);
+
+            // результат как разница собственного и наилучшего счета
+            return score;
+        }
+
         /// <summary>
         /// оценить ситуацию на доске с позиции pov
         /// выдать численную оценку - чем больше, тем лучше
         /// </summary>        
-        public static int GetScore(Board board, Spieler pov)
+        public static int GetScore2(Board board, Spieler pov)
         {
             if (board.Winner == pov) return int.MaxValue;
 
