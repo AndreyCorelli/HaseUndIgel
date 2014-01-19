@@ -12,6 +12,8 @@ namespace HaseUndIgel.BL
 
         public Point Location { get; set; }
 
+        public Point NumberLocation { get; set; }
+
         public Cell() {}
 
         public Cell(CellType cellType)

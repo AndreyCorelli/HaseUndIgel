@@ -30,7 +30,7 @@ namespace HaseUndIgel.GUI
         #region Drawing variables
         private Bitmap[] pictures;
         private int cellShapeSz, cellSpanX, cellSpanY;
-        private Font cellFont;
+        private Font cellFont, indexFont;
         private Point[] tokenSelectors;
 
         #endregion
@@ -50,6 +50,7 @@ namespace HaseUndIgel.GUI
         public BoardControl()
         {
             cellFont = new Font(Font, FontStyle.Bold);
+            indexFont = Font;
             LoadPictures();
             DoubleBuffered = true;
         }
@@ -220,6 +221,7 @@ namespace HaseUndIgel.GUI
 
             var cellSizeX = cellShapeSz + cellSpanX;
             var cellSizeY = cellShapeSz + cellSpanY;
+            const int cellIndexShift = 5;
 
             var cellIndex = 0;
             for (; cellIndex < m; cellIndex++)
@@ -228,6 +230,8 @@ namespace HaseUndIgel.GUI
                 var y = cellIndex;
                 Board.cells[cellIndex].Location =
                     new Point(CellMargin + x * cellSizeX + cellSizeX / 2, y * cellSizeY + cellSizeY / 2);
+                Board.cells[cellIndex].NumberLocation =
+                    new Point(CellMargin + x * cellSizeX - cellIndexShift, y * cellSizeY + cellSizeY / 2);
             }
             
             for (var i = 1; i < n; i++)
@@ -236,6 +240,8 @@ namespace HaseUndIgel.GUI
                 var y = m - 1;
                 Board.cells[cellIndex++].Location =
                     new Point(CellMargin + x * cellSizeX + cellSizeX / 2, y * cellSizeY + cellSizeY / 2);
+                Board.cells[cellIndex - 1].NumberLocation =
+                    new Point(CellMargin + x * cellSizeX + cellSizeX / 2, y * cellSizeY - cellIndexShift);
             }
 
             for (var i = 1; i < m; i++)
@@ -244,6 +250,8 @@ namespace HaseUndIgel.GUI
                 var y = m - 1 - i;
                 Board.cells[cellIndex++].Location =
                     new Point(CellMargin + x * cellSizeX + cellSizeX / 2, y * cellSizeY + cellSizeY / 2);
+                Board.cells[cellIndex - 1].NumberLocation =
+                    new Point(CellMargin + x * cellSizeX + cellSizeX + cellIndexShift, y * cellSizeY + cellSizeY / 2);
             }
 
             var xStart = 1;
@@ -253,6 +261,8 @@ namespace HaseUndIgel.GUI
                 var y = 0;
                 Board.cells[cellIndex].Location =
                     new Point(CellMargin + x * cellSizeX + cellSizeX / 2, y * cellSizeY + cellSizeY / 2);
+                Board.cells[cellIndex].NumberLocation =
+                    new Point(CellMargin + x * cellSizeX + cellSizeX / 2, y * cellSizeY + cellSizeY + cellIndexShift);
             }
         }
     
@@ -288,6 +298,11 @@ namespace HaseUndIgel.GUI
                 g.DrawString(text, cellFont, brushes.GetBrush(textColor), cell.Location.X, cell.Location.Y,
                     new StringFormat { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
             }
+
+            // индекс
+            g.DrawString(cellIndex.ToString(), indexFont, brushes.GetBrush(Color.Black),
+                cell.NumberLocation.X, cell.NumberLocation.Y,
+                    new StringFormat { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
 
             // фишка
             var tokenOnCell = Board.tokens.FirstOrDefault(t => t.Position == cellIndex);

@@ -3,6 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HaseUndIgel", "HaseUndIgel\HaseUndIgel.csproj", "{CDA936CA-76C6-4872-B9F8-38D7218A3C1E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HaseUndIgel.Test", "HaseUndIgel.Test\HaseUndIgel.Test.csproj", "{09DA1AB6-DC85-44A1-B22E-026986EFED6A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{3E6B21B3-59FE-4BB0-B55F-787225B04BCE}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +22,10 @@ Global
 		{CDA936CA-76C6-4872-B9F8-38D7218A3C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDA936CA-76C6-4872-B9F8-38D7218A3C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDA936CA-76C6-4872-B9F8-38D7218A3C1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09DA1AB6-DC85-44A1-B22E-026986EFED6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09DA1AB6-DC85-44A1-B22E-026986EFED6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09DA1AB6-DC85-44A1-B22E-026986EFED6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09DA1AB6-DC85-44A1-B22E-026986EFED6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

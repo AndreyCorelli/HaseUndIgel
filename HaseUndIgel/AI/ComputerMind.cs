@@ -73,10 +73,10 @@ namespace HaseUndIgel.AI
         }
 
         private static void MakeAllProbableTurns(Board board, SolutionNode root, Spieler pov,
-            int level)
+                                                 int level)
         {
             if (board.Endspiel) return;
-            
+
             // если игрок пропускает ход...
             var spieler = board.CurrentSpieler;
             if (spieler.Freezed)
@@ -93,15 +93,16 @@ namespace HaseUndIgel.AI
             // выбрать фишку для хода (актуально для игры вдвоем)
             int[] tokenIndicies;
             if (board.spielers.Length == 2)
-            {    
+            {
                 tokenIndicies = board.currentSpielerIndex == 0
-                                    ? new[] {0, 1} : new[] {2, 3};
+                                    ? new[] {0, 1}
+                                    : new[] {2, 3};
                 // если это первый ход и все фишки на стартовой позиции - сокращаем выбор
                 if (board.tokens[tokenIndicies[0]].Position == board.tokens[tokenIndicies[1]].Position)
-                    tokenIndicies = new [] {tokenIndicies[0]};
+                    tokenIndicies = new[] {tokenIndicies[0]};
             }
             else
-                tokenIndicies = new [] {board.currentSpielerIndex};
+                tokenIndicies = new[] {board.currentSpielerIndex};
 
             // если игрок стоит на капусте одной из фишек -
             // отдать капусту, получить моркву и пропустить ход
@@ -115,6 +116,16 @@ namespace HaseUndIgel.AI
                 return;
             }
 
+            // если фишка на капусте - только этой фишкой и ходим
+            if (tokenIndicies.Length == 2)
+            {
+                if (board.cells[board.tokens[tokenIndicies[0]].Position].CellType == CellType.Cabbage)
+                    tokenIndicies = new[] {tokenIndicies[0]};
+                else
+                    if (board.cells[board.tokens[tokenIndicies[1]].Position].CellType == CellType.Cabbage)
+                        tokenIndicies = new[] { tokenIndicies[1] };
+            }        
+            
             // пробуем ходить каждой фишкой
             foreach (var tokenIndex in tokenIndicies)
             {
@@ -224,6 +235,11 @@ namespace HaseUndIgel.AI
             int tokenIndex, int position, bool gaveCarrot)
         {
             var nextBoard = board.MakeShallowCopy();
+            string errStr;
+            int deltaCarrots;
+            if (!nextBoard.CheckTurn(board.currentSpielerIndex, tokenIndex, position,
+                                     gaveCarrot, out errStr, out deltaCarrots)) 
+                throw new Exception(errStr);
             nextBoard.MakeTurn(tokenIndex, position, gaveCarrot, true);
             MakeNewRootAndGoDown(nextBoard, root, pov, recursionLevel, tokenIndex, position, gaveCarrot);
         }
@@ -256,27 +272,33 @@ namespace HaseUndIgel.AI
             var povPosition = povTokens.Sum(t => t.Position);
             var povCabbage = pov.GiveCabbage ? pov.CabbageSpare - 1 : pov.CabbageSpare;
             var povCarrots = pov.CarrotsSpare;
-            if (pov.GiveCabbage)
-                povCarrots += 10;
+            
             // относительная позиция
             var relPos = povPosition / (double) board.cells.Length / povTokens.Length;
 
+            // бонусы POV за след. ход прибавляются к его моркови
+            povCarrots += GetSpielerCarrotsBonus(pov, povTokens, board);
+            
             for (var i = 0; i < board.spielers.Length; i++)
             {
                 var spieler = board.spielers[i];
                 if (board.Winner == spieler) return int.MinValue;
 
-                if (spieler == pov) continue;
+                if (spieler.Id == pov.Id) continue;
                 var spielerTokens = board.GetSpielerTokens(i);
                 
                 // разница в расстоянии
                 var deltaCells = povPosition - spielerTokens.Sum(t => t.Position);
                 score += deltaCells;
-                
+            
+                // штраф игроку за малое количество моркови
+                if (spieler.CarrotsSpare < 12)
+                    score += (spieler.CarrotsSpare - 13) * (spieler.CarrotsSpare - 13);
+
                 // и в моркови
                 var deltaCarrots = povCarrots -
                                    (spieler.GiveCabbage ? spieler.CarrotsSpare + 10 : spieler.CarrotsSpare);
-                var deltaCarrotsScore = Math.Sign(deltaCarrots) * (int)Math.Round(Math.Sqrt(deltaCarrots));
+                var deltaCarrotsScore = Math.Sign(deltaCarrots) * (int)Math.Round(Math.Sqrt(Math.Abs(deltaCarrots)));
                 score += deltaCarrotsScore;
 
                 // и в капусте
@@ -288,10 +310,31 @@ namespace HaseUndIgel.AI
 
             // штраф за низкую степень свободы
             if (povCarrots < 12)
-                score -= (povCarrots - 14) * (povCarrots - 14);
+                score -= (povCarrots - 15) * (povCarrots - 15);
 
             // результат как разница собственного и наилучшего счета
             return score;
+        }
+
+        private static int GetSpielerCarrotsBonus(Spieler pov, Token[] povTokens, Board board)
+        {
+            var povCarrots = 0;
+
+            foreach (var token in povTokens)
+            {
+                var tokenCell = token.Position;
+                var cell = board.cells[tokenCell];
+                if (cell.CellType == CellType.Cabbage ||
+                    cell.CellType == CellType.Number)
+                {
+                    var tokenPos = board.tokens.Count(t => t.Position > tokenCell) + 1;
+                    if ((cell.CellType == CellType.Number && (cell.Points == tokenPos ||
+                                                              cell.Points == 1 && tokenPos > 4)) ||
+                        (cell.CellType == CellType.Cabbage && !pov.GiveCabbage))
+                        povCarrots += tokenPos * Board.CarrotsPerCabbage;
+                }
+            }
+            return povCarrots;
         }
 
         /// <summary>
@@ -316,47 +359,6 @@ namespace HaseUndIgel.AI
             // результат как разница собственного и наилучшего счета
             return ownScore - maxOtherScore;
         }
-
-        //public static int GetSpielerScore(Board board, Spieler pov)
-        //{
-        //    var score = 0;
-
-        //    // в морковках учтем те, что получит игрок после хода
-        //    var spielerCarrots = pov.CarrotsSpare;
-        //    var cellsPassed = 0;
-
-        //    // фишки игрока (1 или 2)
-        //    var tokens = board.GetSpielerTokens(board.spielers.FindIndex(s => s.Id == pov.Id));
-        //    foreach (var token in tokens)
-        //    {
-        //        cellsPassed += token.Position;
-        //        var curCell = board.cells[token.Position];
-        //        // заяц в минус
-        //        if (curCell.CellType == CellType.Hare)
-        //            score -= HarePenalty;
-
-        //        // бонус за номерную карту и позицию в гонке
-        //        var ownPos = token.Position;
-        //        var pos = board.tokens.Count(t => t.Position > ownPos) + 1;
-        //        if (curCell.CellType == CellType.Number && pos == curCell.Points)
-        //        {
-        //            var delta = pos * Board.CarrotsPerPosition;
-        //            spielerCarrots += delta;
-        //        }
-
-        //        // учесть морковки, получаемые за капусту
-        //        if (pov.GiveCabbage && curCell.CellType == CellType.Cabbage)
-        //        {
-        //            var delta = pos * Board.CarrotsPerCabbage;
-        //            spielerCarrots += delta;
-        //        }
-        //    }
-
-        //    // посчитаем, сколько клеток игрок сможет пройти за свои морковки
-
-
-        //    return score;
-        //}
 
         public static int GetSpielerScore(Board board, Spieler pov)
         {

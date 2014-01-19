@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using HaseUndIgel.BL;
 using HaseUndIgel.Util;
 
@@ -55,6 +56,8 @@ namespace HaseUndIgel.AI
             
             // выбрать наибольший из меньших результатов
             var ind = rootScore.IndexOfMin(s => -s.b);
+            root.BestIndex = ind;
+            ShowChainAndLastBoard(root);
             
             var nodeBest = rootScore[ind].a;
             return nodeBest;
@@ -69,6 +72,7 @@ namespace HaseUndIgel.AI
             }            
 
             var extrScore = chooseMin ? int.MaxValue : int.MinValue;
+            var ci = 0;
             // ReSharper disable LoopCanBeConvertedToQuery
             foreach (var child in branchRoot.children)
             // ReSharper restore LoopCanBeConvertedToQuery
@@ -78,7 +82,9 @@ namespace HaseUndIgel.AI
                     (!chooseMin && (score > extrScore)))
                 {
                     extrScore = score;
+                    branchRoot.BestIndex = ci;
                 }
+                ci++;
             }
             
             return extrScore;
@@ -88,5 +94,30 @@ namespace HaseUndIgel.AI
         {
             return "t[" + token + "]->" + targetCell + (gaveCarrot ? "(-m)" : ""); // +"/" + score + "/";
         }
+
+        #region Debug
+
+        public int BestIndex;
+
+        public static void ShowChainAndLastBoard(SolutionNode root)
+        {
+            var turnsString = new StringBuilder();
+            while (true)
+            {
+                turnsString.AppendFormat("t[{0}]->{1}{2}. ", root.token, root.targetCell, root.gaveCarrot ? ", c-" : "");
+                if (root.Board != null)
+                {
+                    Logger.Info(root.Board.ToString());
+                    Logger.Info("Score: " + ComputerMind.GetScore(root.Board, root.Board.CurrentSpieler));
+                }
+
+                if (root.children.Count > 0)
+                    root = root.children[root.BestIndex];
+                else break;
+            }
+            Logger.Info(turnsString.ToString());
+        }
+
+        #endregion
     }    
 }

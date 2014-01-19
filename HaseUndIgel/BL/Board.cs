@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using HaseUndIgel.AI;
 
 namespace HaseUndIgel.BL
@@ -393,7 +394,7 @@ namespace HaseUndIgel.BL
                 {
                     spieler.GiveCabbage = false;
                     spieler.CabbageSpare--;
-                    var position = 1 + tokens.Count(t => t.Position > oldPos);
+                    var position = 1 + tokens.Count(t => t.Position > targetPosition);
                     var deltaCarrots = CarrotsPerCabbage * position;
                     spieler.CarrotsSpare += deltaCarrots;
                     return "Капуста отдана, получено " + deltaCarrots + " моркови";
@@ -494,6 +495,22 @@ namespace HaseUndIgel.BL
         public Token[] GetSpielerTokens()
         {
             return GetSpielerTokens(currentSpielerIndex);
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder("board.currentSpielerIndex = " + currentSpielerIndex + ";\n"
+                + string.Join("\n", tokens.Select((t, i) => string.Format("board.tokens[{0}].Position = {1};", i, t.Position))) + "\n");
+            
+            for (var i = 0; i < spielers.Length; i++)
+            {
+                var spieler = spielers[i];
+                sb.AppendFormat("board.spielers[{0}].CarrotsSpare = {1};\n", i, spieler.CarrotsSpare);
+                sb.AppendFormat("board.spielers[{0}].CabbageSpare = {1};\n", i, spieler.CabbageSpare);
+                sb.AppendFormat("board.spielers[{0}].GiveCabbage = {1};\n", i, spieler.GiveCabbage.ToString().ToLower());
+            }
+
+            return sb.ToString();
         }
     }
 }
