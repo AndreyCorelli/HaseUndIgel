@@ -46,13 +46,20 @@ namespace HaseUndIgel.AI
         /// <summary>
         /// обойти дерево, найдя его первую ветвь по определенным критериям
         /// </summary>
-        public static SolutionNode ResolveTree(SolutionNode root, Spieler pov)
+        public static SolutionNode ResolveTree(SolutionNode root, Spieler pov, Board board)
         {
             if (root.children == null || root.children.Count == 0) 
                 return null;
             if (root.children.Count == 1) return root.children[0];
 
             var rootScore = root.children.Select(c => new Cortege2<SolutionNode, int>(c, GetBranchScore(c, true, pov))).ToList();
+            // скорректировать счет оценкой ситуации !после первого же хода!
+            if (rootScore.Count > 1)
+                for (var i = 0; i < rootScore.Count; i++)
+                {
+                    var deltaScore = ComputerMind.GetScoreForProbableTurn(board, rootScore[i].a);
+                    rootScore[i] = new Cortege2<SolutionNode, int>(rootScore[i].a, rootScore[i].b + deltaScore);
+                }
             
             // выбрать наибольший из меньших результатов
             var ind = rootScore.IndexOfMin(s => -s.b);

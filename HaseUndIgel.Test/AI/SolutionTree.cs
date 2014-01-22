@@ -53,7 +53,7 @@ namespace HaseUndIgel.Test.AI
         {
             var root = new SolutionNode { children = new List<SolutionNode>() };
             MakeNode(root, 0);
-            var bestNode = SolutionNode.ResolveTree(root, boardInit.spielers[boardInit.currentSpielerIndex]);
+            var bestNode = SolutionNode.ResolveTree(root, boardInit.spielers[boardInit.currentSpielerIndex], boardInit);
             Assert.IsNotNull(bestNode);
         }
     }

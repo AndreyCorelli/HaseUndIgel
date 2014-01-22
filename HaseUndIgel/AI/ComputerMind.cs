@@ -18,7 +18,7 @@ namespace HaseUndIgel.AI
         /// <summary>
         /// после этого хода возможные варианты начинают резаться
         /// </summary>
-        public const int MaxLevelToTryAllPaths = 3;
+        public const int MaxLevelToTryAllPaths = 1;
 
         /// <summary>
         /// штраф за нахождение на клетке зайца
@@ -45,13 +45,13 @@ namespace HaseUndIgel.AI
             if (board.Endspiel) return;
 
             // ход конем - без просчета вариантов?
-            var unconditionalTurn = MakeTurnNoChoice(board);
-            if (unconditionalTurn.HasValue)
-            {
-                board.MakeTurn(unconditionalTurn.Value.X,
-                           unconditionalTurn.Value.Y, false, false);
-                return;
-            }
+            //var unconditionalTurn = MakeTurnNoChoice(board);
+            //if (unconditionalTurn.HasValue)
+            //{
+            //    board.MakeTurn(unconditionalTurn.Value.X,
+            //               unconditionalTurn.Value.Y, false, false);
+            //    return;
+            //}
 
             SolutionNode root;
             SolutionNode.nodesCount = 0;
@@ -71,7 +71,7 @@ namespace HaseUndIgel.AI
             SolutionNode turnRoot;
             using (new TimeLogger("Resolving tree took"))
             {
-                turnRoot = SolutionNode.ResolveTree(root, board.CurrentSpieler);
+                turnRoot = SolutionNode.ResolveTree(root, board.CurrentSpieler, board);
                 if (turnRoot == null)
                     return; // пат?
             }
@@ -140,6 +140,41 @@ namespace HaseUndIgel.AI
             // скорректировать индекс токена
             var tokenIndex = board.tokens.FindIndex(t => t == tokens[bestVariant.a]);
             return new Point(tokenIndex, bestVariant.b);
+        }
+
+        public static int GetScoreForProbableTurn(Board board, SolutionNode node)
+        {
+            var score = 0;
+            var spieler = board.CurrentSpieler;
+            var token = board.tokens[node.token];
+            var targetCell = board.cells[node.targetCell];
+            var tokenPosition = 1 + board.tokens.Count(t => t.Position > node.targetCell);
+
+            if (targetCell.CellType == CellType.Finish)
+                score += 30; // бонус за финиш
+            else 
+                if (targetCell.CellType == CellType.Cabbage)
+                {// бонус за прыжок на капусту
+                    score += tokenPosition * Board.CarrotsPerCabbage;
+                }
+
+            // штраф за "мало моркови"
+            var deltaCells = node.targetCell - token.Position;
+            if (deltaCells > 0)
+            {
+                var spielerTokens = board.GetSpielerTokens(board.currentSpielerIndex);
+                var additionalCarrots = GetSpielerCarrotsBonus(spieler, spielerTokens, board);
+                var spielerCarrots = spieler.CarrotsSpare + additionalCarrots - Board.GetCarrotsPerCells(deltaCells);
+
+                if (spielerCarrots < 5)
+                    score -= 30;
+                else if (spielerCarrots < 10)
+                    score -= 15;
+                else if (spielerCarrots < 14)
+                    score -= 5;
+            }
+
+            return score;
         }
 
         private static void MakeAllProbableTurns(Board board, SolutionNode root, Spieler pov,
