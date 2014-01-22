@@ -296,15 +296,19 @@ namespace HaseUndIgel.AI
                     score += (spieler.CarrotsSpare - 13) * (spieler.CarrotsSpare - 13);
 
                 // и в моркови
-                var deltaCarrots = povCarrots -
-                                   (spieler.GiveCabbage ? spieler.CarrotsSpare + 10 : spieler.CarrotsSpare);
+                var spielerCarrots = spieler.GiveCabbage ? spieler.CarrotsSpare + 10 : spieler.CarrotsSpare;
+                var deltaCarrots = povCarrots - spielerCarrots;
                 var deltaCarrotsScore = Math.Sign(deltaCarrots) * (int)Math.Round(Math.Sqrt(Math.Abs(deltaCarrots)));
+                if (spielerCarrots < 8)
+                    deltaCarrotsScore = (int)(deltaCarrotsScore * 2.5);
+                else if (spielerCarrots < 12)
+                    deltaCarrotsScore = (int)(deltaCarrotsScore * 1.5);
                 score += deltaCarrotsScore;
 
                 // и в капусте
                 var spielerCabbage = spieler.GiveCabbage ? spieler.CabbageSpare - 1 : spieler.CabbageSpare;
                 var deltaCabbage = spielerCabbage - povCabbage;
-                var kCabbage = relPos < 0.25 ? 20 : relPos < 0.45 ? 35 : relPos < 0.65 ? 65 : 140;
+                var kCabbage = relPos < 0.25 ? 30 : relPos < 0.45 ? 55 : relPos < 0.65 ? 75 : 140;
                 score += deltaCabbage * kCabbage;
             }
 
