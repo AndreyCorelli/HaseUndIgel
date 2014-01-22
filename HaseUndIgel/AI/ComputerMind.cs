@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using HaseUndIgel.BL;
 using HaseUndIgel.Util;
 using System.Linq;
@@ -43,6 +44,15 @@ namespace HaseUndIgel.AI
         {
             if (board.Endspiel) return;
 
+            // ход конем - без просчета вариантов?
+            var unconditionalTurn = MakeTurnNoChoice(board);
+            if (unconditionalTurn.HasValue)
+            {
+                board.MakeTurn(unconditionalTurn.Value.X,
+                           unconditionalTurn.Value.Y, false, false);
+                return;
+            }
+
             SolutionNode root;
             SolutionNode.nodesCount = 0;
             using (new TimeLogger("Turns took"))
@@ -70,6 +80,66 @@ namespace HaseUndIgel.AI
             // таки сделать ход
             board.MakeTurn(turnRoot.token,
                            turnRoot.targetCell, turnRoot.gaveCarrot, false);
+        }
+
+        /// <summary>
+        /// сделать ход, не заморачиваясь подсчетом
+        /// вариантов, если ход "очевиден"
+        /// </summary>        
+        public static Point? MakeTurnNoChoice(Board board)
+        {
+            var spieler = board.CurrentSpieler;
+            if (spieler.GiveCabbage || spieler.Freezed) return null;
+            var tokens = board.GetSpielerTokens(board.currentSpielerIndex);
+            if (tokens.Any(t => board.cells[t.Position].CellType == CellType.Cabbage))
+                return null;
+
+            // token - targetCell - rate
+            var turnVariants = new List<Cortege3<int, int, int>>();
+
+            // посчитать бонусную капусту
+            var carrotsBonus = GetSpielerCarrotsBonus(spieler, tokens, board);
+            var spielerCarrots = carrotsBonus + spieler.CarrotsSpare;
+            
+            // есть ли свободная капуста для прыжка вперед?
+            const int minCarrotsReserved = 10;
+            if (spieler.CabbageSpare > 0)
+            {
+                for (var i = 0; i < tokens.Length; i++)
+                {
+                    var token = tokens[i];
+
+                    // есть ли свободная капуста впереди?
+                    for (var j = token.Position + 1; j < board.cells.Length - 1; j++)
+                    {
+                        if (board.cells[j].CellType != CellType.Cabbage) continue;
+                        // занята?
+                        if (board.tokens.Any(t => t.Position == j)) break;
+                        var carrotsRequired = Board.GetCarrotsPerCells(j - token.Position);
+                        if (carrotsRequired > spielerCarrots - minCarrotsReserved) break;
+                        // есть свободная капуста!
+                        var turnRate = (spielerCarrots - carrotsRequired) +
+                                       board.tokens.Count(t => t.Position > i)*10;
+                        turnVariants.Add(new Cortege3<int, int, int>(i, j, turnRate));
+                    }
+                }
+            }
+
+            // отсеять недопустимые ходы
+            if (turnVariants.Count == 0) return null;
+            string error;
+            int deltaCarrots;
+            turnVariants = turnVariants.Where(v => board.CheckTurn(board.currentSpielerIndex, v.a, v.b, false,
+                                                                   out error, out deltaCarrots)).ToList();
+            if (turnVariants.Count == 0) return null;
+            
+            // выбор лучшего из вариантов
+            var bestIndex = turnVariants.IndexOfMin(v => -v.c);
+            var bestVariant = turnVariants[bestIndex];
+            
+            // скорректировать индекс токена
+            var tokenIndex = board.tokens.FindIndex(t => t == tokens[bestVariant.a]);
+            return new Point(tokenIndex, bestVariant.b);
         }
 
         private static void MakeAllProbableTurns(Board board, SolutionNode root, Spieler pov,

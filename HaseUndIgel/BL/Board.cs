@@ -329,7 +329,7 @@ namespace HaseUndIgel.BL
             {
                 var oldPosition = 1 + tokens.Count(t => t.Position > oldPos);
                 var carrotsMax = oldPosition * CarrotsPerFinish;
-                if (spieler.CarrotsSpare > carrotsMax)
+                if (spieler.CarrotsSpare - carrotsNeeded + additionalCarrots > carrotsMax)
                 {
                     error = "Избыток моркови для финиша (" + carrotsMax + ")";
                     return false;
