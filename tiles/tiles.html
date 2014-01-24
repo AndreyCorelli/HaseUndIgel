@@ -22,21 +22,25 @@
 
     <script type="text/javascript">
 
-        var paletteItemIndex = -1;
+        var board;
 
         function initBoard() {
-            var board = new Board();
+            board = new Board();
             board.drawBoard();
             board.drawPalette();
         }
 
         function Board() {
+            // variables
+            this.currentPaletteItemIndex = -1;
+
+            // constants
             this.rows = 12;
             this.cols = 10;
             this.tileSz = 48;
             this.tileSz2 = 24;
             this.tileSz4 = 12;
-            
+                        
             // constants - tile types
             this.TileGrass = 0;
             this.TileSand = 1;
@@ -54,6 +58,7 @@
                 }
             }
 
+            // draw board as is
             this.drawBoard = function () {
                 var canvas = $('div#boardCanvas');
                 var strInnerHtml = '';
@@ -79,6 +84,7 @@
                 canvas.html(strInnerHtml);
             };
 
+            // draw palette that is used for choosing board tiles
             this.drawPalette = function () {
                 var canvas = $('div#boardPalette');
                 var strInnerHtml = ''; // 
@@ -86,15 +92,16 @@
                 for (var i = 0; i < Object.keys(this.tileImage).length; i++) {
                     var tileImgStr = this.tileImage[i];
                     var strTag = '<img src="pic/' + tileImgStr + '" class="palette" ' +
-                        'onclick="choosePaletteItem(=' + i + ')"' + '/>\n';
+                        'onclick="board.choosePaletteItem(' + i + ')"' + '/>\n';
                     strInnerHtml = strInnerHtml + strTag;
                 }
                 canvas.html(strInnerHtml);
             }
-        }
 
-        function choosePaletteItem(itemIndex) {
-            paletteItemIndex = itemIndex;
+            // choose cell type from palette
+            this.choosePaletteItem = function (itemIndex) {
+                this.currentPaletteItemIndex = itemIndex;
+            }
         }
 
         function boardCellClicked() {
