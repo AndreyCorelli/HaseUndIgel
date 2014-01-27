@@ -3,7 +3,7 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>Tiles</title>
+    <title>Board</title>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
     <script src="js/init_board.js"></script>
@@ -27,9 +27,9 @@
             board = new Board();
             if (typeof boardCells != 'undefined')
                 board.cells = boardCells;
-            board.boardCodeContainer = 'boardSrc';
             board.drawBoard();
-            board.drawPalette();
+
+            board.initSpielers(2);
         }
     </script>
 </head>
@@ -39,9 +39,6 @@
     </div>
 
     <div id="boardPalette" style="position: absolute; top:540px">
-    </div>
-
-    <div id="boardSrc" style="position: absolute; top:600px">
-    </div>
+    </div>    
 </body>
 </html>
