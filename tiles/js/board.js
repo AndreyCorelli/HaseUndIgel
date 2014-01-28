@@ -4,16 +4,20 @@ function Board() {
     // spielers
     this.spielers = new Array();
 
-    // variables
-    this.currentPaletteItemIndex = -1;
-    this.boardCodeContainer = '';
-
     // constants
+    this.SpielModeEdit = 0;
+    this.SpielModeSpiel = 1;
     this.rows = 12;
     this.cols = 10;
     this.tileSz = 48;
     this.tileSz2 = 24;
     this.tileSz4 = 12;
+
+    // variables
+    this.currentPaletteItemIndex = -1;
+    this.boardCodeContainer = '';
+    this.currentSpieler = -1;
+    this.spielMode = this.SpielModeEdit;
 
     // constants - tile types
     this.TileGrass = 0;
@@ -30,6 +34,12 @@ function Board() {
     this.tileImage[this.TileShelter] = 'tile_small_shelter.png';
     this.tileImage[this.TileStart] = 'tile_small_start.png';
     this.tileImage[this.TileFinish] = 'tile_small_finish.png';
+
+    this.spielerImage = new Array(4);
+    this.spielerImage[0] = "spieler_a.png";
+    this.spielerImage[1] = "spieler_b.png";
+    this.spielerImage[2] = "spieler_c.png";
+    this.spielerImage[3] = "spieler_d.png";
 
     // cells array
     this.cells = new Array(this.rows);
@@ -66,14 +76,43 @@ function Board() {
 
                 // img tag itself
                 var strStyle = 'style="left: ' + xCoord + 'px; top: ' + yCoord + 'px"';
-                var strTag = '<img src="pic/' + tileImgStr + '" class="tile" onclick="board.changeFieldItem()"' + strStyle + '/>\n';
+                var strTag = '<img src="pic/' + tileImgStr + '" class="tile" onclick="board.processCellClick()"' + strStyle + '/>\n';
                 strInnerHtml = strInnerHtml + strTag;
             }
+
+        // add images for spielers
+        for (var i = 0; i < this.spielers.length; i++) {
+            var spieler = this.spielers[i];
+            // coords
+            var xCoord = this.tileSz * spieler.x;
+            var yCoord = (this.tileSz - this.tileSz4) * spieler.y;
+            var rowEven = (spieler.y % 2 == 0);
+            if (!rowEven)
+                xCoord += this.tileSz2;
+            // tag
+            var tileImgStr = this.spielerImage[i];
+            var strStyle = 'style="left: ' + xCoord + 'px; top: ' + yCoord + 'px"';
+            var strTag = '<img src="pic/' + tileImgStr + '" class="tile" onclick=""' + strStyle + '/>\n';
+            strInnerHtml = strInnerHtml + strTag;
+        }
+
         canvas.html(strInnerHtml);
 
         if (this.boardCodeContainer)
             this.drawBoardSrc();
     };
+
+    this.processCellClick = function () {
+        if (this.spielMode == this.SpielModeSpiel) {
+            this.processSpielerCellClick();
+            return;
+        }
+
+        if (this.spielMode == this.SpielModeEdit) {
+            this.changeFieldItem();
+            return;
+        }
+    }
 
     this.drawBoardSrc = function () {
         var canvas = $('div#' + this.boardCodeContainer);
@@ -97,6 +136,16 @@ function Board() {
             strInnerHtml = strInnerHtml + strTag;
         }
         canvas.html(strInnerHtml);
+    }
+
+    this.processSpielerCellClick = function () {
+        var e = window.event;
+        var srcEl = $(e.srcElement ? e.srcElement : e.target);
+        // deselect other cells
+        srcEl.siblings().css('opacity', '');
+
+        // highlight cell
+        srcEl.css('opacity', '0.5');
     }
 
     // choose cell type from palette
@@ -152,5 +201,8 @@ function Board() {
             this.spielers[i].x = this.cellStartX;
             this.spielers[i].y = this.cellStartY;
         }
+
+        this.currentSpieler = 0;
+        this.spielMode = this.SpielModeSpiel;
     }
 }
