@@ -12,6 +12,8 @@ function Board() {
     this.tileSz = 48;
     this.tileSz2 = 24;
     this.tileSz4 = 12;
+    this.boardPadLeft = 0;
+    this.boardPadTop = 0;
 
     // variables
     this.currentPaletteItemIndex = -1;
@@ -56,19 +58,32 @@ function Board() {
     this.cellEndX = 0;
     this.cellEndY = 0;
 
+    // control panel
+    this.controlPanelIdImgSpieler = '';
+    this.controlPanelIdImgSpielerNext = '';
+    this.controlPanelIdBtnMakeTurn = '';
+    this.controlPanelIdLabelPeople = '';
+    this.controlPanelIdLabelResource = '';
+
     // draw board as is
     this.drawBoard = function () {
+
+        // update control panel: who's making turn etc
+        this.updateControlPanel();
+
+        // draw board itself
         var canvas = $('div#boardCanvas');
+        var canvasCoords = canvas.position();
+        this.boardPadLeft = canvasCoords.left;
+        this.boardPadTop = canvasCoords.top + 30;
         var strInnerHtml = '';
 
         for (var row = 0; row < this.rows; row++)
             for (var col = 0; col < this.cols; col++) {
                 // coords
-                var xCoord = this.tileSz * col;
-                var yCoord = (this.tileSz - this.tileSz4) * row;
-                var rowEven = (row % 2 == 0);
-                if (!rowEven)
-                    xCoord += this.tileSz2;
+                var coords = this.getXYByRowCol(row, col);
+                var xCoord = coords.x;
+                var yCoord = coords.y;
 
                 // img file
                 var tileIndex = this.cells[row][col];
@@ -81,14 +96,12 @@ function Board() {
             }
 
         // add images for spielers
-        for (var i = 0; i < this.spielers.length; i++) {
+        for (var i = this.spielers.length - 1; i >= 0; i++) {
             var spieler = this.spielers[i];
             // coords
-            var xCoord = this.tileSz * spieler.x;
-            var yCoord = (this.tileSz - this.tileSz4) * spieler.y;
-            var rowEven = (spieler.y % 2 == 0);
-            if (!rowEven)
-                xCoord += this.tileSz2;
+            var coords = this.getXYByRowCol(spieler.y, spieler.x);
+            var xCoord = coords.x;
+            var yCoord = coords.y;
             // tag
             var tileImgStr = this.spielerImage[i];
             var strStyle = 'style="left: ' + xCoord + 'px; top: ' + yCoord + 'px"';
@@ -136,6 +149,27 @@ function Board() {
             strInnerHtml = strInnerHtml + strTag;
         }
         canvas.html(strInnerHtml);
+    }
+
+    this.updateControlPanel = function () {
+        if (this.currentSpieler < 0) return;
+
+        // spieler's image
+        if (this.controlPanelIdImgSpieler && this.controlPanelIdImgSpielerNext) {
+            var imgSpieler = $('img#' + this.controlPanelIdImgSpieler);
+            imgSpieler.attr("src", 'pic/' + this.spielerImage[this.currentSpieler]);
+            // the next one
+            var nextSpieler = this.currentSpieler + 1;
+            if (nextSpieler == this.spielers.length) nextSpieler = 0;
+            imgSpieler = $('img#' + this.controlPanelIdImgSpielerNext);
+            imgSpieler.attr("src", 'pic/' + this.spielerImage[nextSpieler]);
+        }
+
+        // resources
+        if (this.controlPanelIdLabelPeople && this.controlPanelIdLabelResource) {
+            $('span#' + this.controlPanelIdLabelPeople).text(this.spielers[this.currentSpieler].people);
+            $('span#' + this.controlPanelIdLabelResource).text(this.spielers[this.currentSpieler].resource);
+        }
     }
 
     this.processSpielerCellClick = function () {
@@ -204,5 +238,14 @@ function Board() {
 
         this.currentSpieler = 0;
         this.spielMode = this.SpielModeSpiel;
+    }
+
+    this.getXYByRowCol = function (row, col) {
+        var xCoord = this.tileSz * col;
+        var yCoord = (this.tileSz - this.tileSz4) * row;
+        var rowEven = (row % 2 == 0);
+        if (!rowEven)
+            xCoord += this.tileSz2;
+        return new Point(xCoord + this.boardPadLeft, yCoord + this.boardPadTop);
     }
 }
