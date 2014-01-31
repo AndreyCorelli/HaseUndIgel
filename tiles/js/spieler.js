@@ -3,8 +3,10 @@
 function Spieler(index) {
     // variables
     this.index = index;
-    this.people = 10;
-    this.resource = 50;
+    this.people = 6;
+    this.resource = 60;
     this.x = -1;
     this.y = -1;
+    // current step in a turn
+    this.curStep = 1;
 }

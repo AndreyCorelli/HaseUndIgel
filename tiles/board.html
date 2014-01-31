@@ -9,12 +9,14 @@
     <script src="js/point.js"></script>
     <script src="js/init_board.js"></script>
     <script src="js/spieler.js"></script>
+    <script src="js/rules.js"></script>
     <script src="js/board.js"></script>
     <link href="css/styles.css" rel="stylesheet" type="text/css" />
     
     <script type="text/javascript">
+        var board = new Board();
+
         function initBoard() {
-            board = new Board();
             if (typeof boardCells != 'undefined')
                 board.cells = boardCells;
             board.initSpielers(2);
@@ -25,6 +27,10 @@
             board.controlPanelIdLabelResource = 'labelResource';
 
             board.drawBoard();
+        }
+
+        function confirmTurn(shouldEnd) {
+            board.spielerConfirmedTurn(shouldEnd);
         }
     </script>
 </head>
@@ -39,7 +45,8 @@
             <tr><td>people:</td><td><span id="labelPeople"></span></td></tr>
             <tr><td>resource:</td><td><span id="labelResource"></span></td></tr>
         </table>
-        <label id="btnMakeTurn" class="buttonGo">Go!</label>
+        <label id="btnMakeTurn" class="buttonGo" onclick="confirmTurn(false)">Go!</label>
+        <label id="btnFinishTurn" class="buttonGo" onclick="confirmTurn(true)">Stop</label>
     </div>
     
     <div id="boardCanvas">

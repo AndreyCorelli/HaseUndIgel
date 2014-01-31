@@ -1,6 +1,9 @@
 ﻿var board;
 
 function Board() {
+    // spiel rules
+    this.rules = new Rules(this);
+
     // spielers
     this.spielers = new Array();
 
@@ -20,18 +23,19 @@ function Board() {
     this.boardCodeContainer = '';
     this.currentSpieler = -1;
     this.spielMode = this.SpielModeEdit;
+    this.spielerSelectedCell = new Point(-1, -1);
 
     // constants - tile types
-    this.TileGrass = 0;
-    this.TileSand = 1;
+    this.TileSand = 0;
+    this.TileGrass = 1;
     this.TileSniper = 2;
     this.TileShelter = 3;
     this.TileStart = 4;
     this.TileFinish = 5;
 
     this.tileImage = {};
-    this.tileImage[this.TileGrass] = 'tile_small_grass.png';
     this.tileImage[this.TileSand] = 'tile_small_sand.png';
+    this.tileImage[this.TileGrass] = 'tile_small_grass.png';
     this.tileImage[this.TileSniper] = 'tile_small_sniper.png';
     this.tileImage[this.TileShelter] = 'tile_small_shelter.png';
     this.tileImage[this.TileStart] = 'tile_small_start.png';
@@ -96,8 +100,8 @@ function Board() {
             }
 
         // add images for spielers
-        for (var i = this.spielers.length - 1; i >= 0; i++) {
-            var spieler = this.spielers[i];
+        for (var i = this.spielers.length - 1; i >= 0; i--) {
+            var spieler = this.spielers[i];            
             // coords
             var coords = this.getXYByRowCol(spieler.y, spieler.x);
             var xCoord = coords.x;
@@ -115,6 +119,13 @@ function Board() {
             this.drawBoardSrc();
     };
 
+    // get cell type (int, enum) from tile's image
+    this.getCellTypeByRowCol = function (row, col) {
+        return this.cells[row][col];
+    }
+
+    // select cell to make turn or to change tile
+    // processSpielerCellClick() V changeFieldItem()
     this.processCellClick = function () {
         if (this.spielMode == this.SpielModeSpiel) {
             this.processSpielerCellClick();
@@ -127,6 +138,7 @@ function Board() {
         }
     }
 
+    // render board as tile images in a DIV (canvas)
     this.drawBoardSrc = function () {
         var canvas = $('div#' + this.boardCodeContainer);
         var innerText = '    var boardCells = new Array(' + this.rows + ');<br/>';
@@ -151,6 +163,8 @@ function Board() {
         canvas.html(strInnerHtml);
     }
 
+    // update spieler's control panel
+    // (Go! button, score etc)
     this.updateControlPanel = function () {
         if (this.currentSpieler < 0) return;
 
@@ -172,14 +186,45 @@ function Board() {
         }
     }
 
+    // select cell to make turn
     this.processSpielerCellClick = function () {
+        // turn could be deprecated
+        this.spielerSelectedCell = new Point(-1, -1);
+
         var e = window.event;
         var srcEl = $(e.srcElement ? e.srcElement : e.target);
+
+        // check turn - is it allowed?
+        var isAllowed = this.checkTurn(srcEl);
+
         // deselect other cells
-        srcEl.siblings().css('opacity', '');
+        this.removeSelectionOnTiles();
 
         // highlight cell
-        srcEl.css('opacity', '0.5');
+        var opacity = 0.85;
+        if (isAllowed) {
+            var coords = this.getImgTileXY(srcEl);
+            // the cell is selected
+            this.spielerSelectedCell = new Point(coords.x, coords.y);
+            opacity = 0.5; //srcEl.parent().css('background-color', 'white');
+        }
+        srcEl.css('opacity', opacity);
+    }
+
+    // draw all cells as not selected
+    this.removeSelectionOnTiles = function () {
+        var canvas = $('div#boardCanvas');
+        canvas.children().css('opacity', '');
+    }
+
+    // get cell coords (cell, selected by user)
+    this.getCellSelectedBySpieler = function (img) {
+        // get target cell coords
+        if (!img) {
+            var canvas = $('div#boardCanvas');
+            img = canvas.children("img[style*='opacity']")[0];
+        }
+        return this.getImgTileXY(img);
     }
 
     // choose cell type from palette
@@ -198,16 +243,10 @@ function Board() {
     // change a cell on the field
     this.changeFieldItem = function () {
         if (this.currentPaletteItemIndex < 0) return;
-
         var e = window.event;
         var srcEl = $(e.srcElement ? e.srcElement : e.target);
-
-        // get img order amongst other images
-        var childIndex = srcEl.index();
-        // get X-Y from index
-        var y = Math.floor(childIndex / this.cols);
-        var x = childIndex - this.cols * y;
-        this.cells[y][x] = this.currentPaletteItemIndex;
+        var coords = this.getImgTileXY(srcEl);
+        this.cells[coords.y][coords.x] = this.currentPaletteItemIndex;
         this.drawBoard();
     }
 
@@ -240,6 +279,17 @@ function Board() {
         this.spielMode = this.SpielModeSpiel;
     }
 
+    // get x-y (col-row) for an img (tile)
+    this.getImgTileXY = function (img) {
+        // get img order amongst other images
+        var childIndex = img.index();
+        // get X-Y from index
+        var y = Math.floor(childIndex / this.cols);
+        var x = childIndex - this.cols * y;
+        return new Point(x, y);
+    }
+
+    // [i][j] => (x, y)
     this.getXYByRowCol = function (row, col) {
         var xCoord = this.tileSz * col;
         var yCoord = (this.tileSz - this.tileSz4) * row;
@@ -247,5 +297,26 @@ function Board() {
         if (!rowEven)
             xCoord += this.tileSz2;
         return new Point(xCoord + this.boardPadLeft, yCoord + this.boardPadTop);
+    }
+
+    // can spieler step on the cell? isn't he freezed? ...
+    this.checkTurn = function (img) {
+        var coords = this.getCellSelectedBySpieler(img);
+        // check if spieler can step on this field
+        return this.rules.checkSpielerCanStepOnCell(coords);
+    }
+
+    // spieler has realy made his turn
+    this.spielerConfirmedTurn = function () {
+        if (!this.spielerSelectedCell || this.spielerSelectedCell.x < 0) return false;
+        // make turn according the Rules
+        this.rules.moveSpielerOnCell(this.spielerSelectedCell, false);
+    }
+
+    // give turn to the next spieler
+    this.switchNextSpieler = function () {
+        this.currentSpieler = this.currentSpieler + 1;
+        if (this.currentSpieler == this.spielers.length)
+            this.currentSpieler = 0;
     }
 }
