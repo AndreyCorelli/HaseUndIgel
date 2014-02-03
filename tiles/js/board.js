@@ -33,6 +33,7 @@ function Board() {
     this.TileShelter = 3;
     this.TileStart = 4;
     this.TileFinish = 5;
+    this.TileRaiders = 6;
 
     this.tileImage = {};
     this.tileImage[this.TileSand] = 'tile_small_sand.png';
@@ -41,6 +42,7 @@ function Board() {
     this.tileImage[this.TileShelter] = 'tile_small_shelter.png';
     this.tileImage[this.TileStart] = 'tile_small_start.png';
     this.tileImage[this.TileFinish] = 'tile_small_finish.png';
+    this.tileImage[this.TileRaiders] = 'tile_small_raiders.png';
 
     this.spielerImage = new Array(4);
     this.spielerImage[0] = "spieler_a.png";
@@ -320,5 +322,9 @@ function Board() {
         this.currentSpieler = this.currentSpieler + 1;
         if (this.currentSpieler == this.spielers.length)
             this.currentSpieler = 0;
+    }
+
+    // show the WINNER
+    this.showFinalTitles = function (winner) {
     }
 }

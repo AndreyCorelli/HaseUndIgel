@@ -17,6 +17,9 @@
 
     // конечная клетка для всех игроков
     this.TileFinish = 5;
+
+    // бандитос... деремся / теряем ресурсы
+    this.TileRaiders = 6;
 */
 
 
@@ -28,7 +31,6 @@ function Rules(board) {
     this.SpielerChoicePeople = 2;
     this.MaxStepsInTurn = 3;
     this.resourcePerCell = [1, 2, 3];
-
     this.SpielerPeopleFromShelter = 2;
     this.SpielerResourceFromShelter = 2;
 
@@ -86,6 +88,21 @@ function Rules(board) {
             } else if (this.spielerChoiceShelter == this.SpielerChoiceResource) {
                 spieler.resource += Math.floor(spieler.people * this.SpielerResourceFromShelter);
             }
+            // remove shelter from the map
+            this.board.cells[coords.y][coords.x] = this.board.TileSand;
+        }
+        // raiders! fight and loose people... or not
+        else if (cellType == this.board.TileRaiders) {
+            if (spieler.people > 8) {
+                // free cell of the raiders
+                this.board.cells[coords.y][coords.x] = this.board.TileSand;
+            } else if (spieler.people > 5) {
+                spieler.people -= 1;
+                this.board.cells[coords.y][coords.x] = this.board.TileSand;
+            } else if (spieler.people > 2) {
+                spieler.people -= 2;
+            } else
+                spieler.people = 0;
         }
 
         // do change coords and charge fee
@@ -97,6 +114,9 @@ function Rules(board) {
         this.board.spielerDecidedOnEndTurn = 0;
         this.spielerChoiceShelter = 0;
         
+        // FIN?
+        this.checkWinLoss(spieler);
+
         // step number...
         spieler.curStep = spieler.curStep + 1;
         // if turn has ended ...
@@ -110,6 +130,13 @@ function Rules(board) {
         }
         // redraw
         this.board.drawBoard();
+    }
+
+    // check is it win or loss?
+    this.checkWinLoss = function (spieler) {
+        var cell = this.board.getCellTypeByRowCol(spieler.y, spieler.x);
+        if (cell == this.board.TileFinish)
+            this.board.showFinalTitles(spieler);
     }
 
     // how much resource needed to step on cell?

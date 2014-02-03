@@ -29,6 +29,11 @@
             board.controlPanelIdLabelPeople = 'labelPeople';
             board.controlPanelIdLabelResource = 'labelResource';
 
+            board.showFinalTitles = function (winner) {
+                $("#popUp").html('Победитель - игрок ' + (winner.index + 1) + '!');
+                $("#popUp").dialog();
+            }
+
             board.drawBoard();
         }
 
