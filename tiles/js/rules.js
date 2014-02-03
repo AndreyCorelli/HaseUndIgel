@@ -1,10 +1,39 @@
-﻿
+﻿/*
+    // путешествие на эту клетку стоит resourcePerCell[numStep] * people ресурсов
+    this.TileSand = 0;  
+    
+    // путешествие на эту клетку стоит вдвое меньше ресурсов, чем на клетку песка
+    this.TileGrass = 1;
+
+    // встав на эту клетку, игрок теряет people -= 1. После чего клетка "очищается" от снайпера
+    this.TileSniper = 2;
+
+    // стоя на этой клетке игрок может либо собрать (people x 2) ресурсов,
+    // либо "пригласить" в команду +2 people
+    this.TileShelter = 3;
+    
+    // стартовая клетка для всех игроков
+    this.TileStart = 4;
+
+    // конечная клетка для всех игроков
+    this.TileFinish = 5;
+*/
+
+
 function Rules(board) {
     this.board = board;
 
     // constants
+    this.SpielerChoiceResource = 1;
+    this.SpielerChoicePeople = 2;
     this.MaxStepsInTurn = 3;
     this.resourcePerCell = [1, 2, 3];
+
+    this.SpielerPeopleFromShelter = 2;
+    this.SpielerResourceFromShelter = 2;
+
+    // spieler choice
+    this.spielerChoiceShelter = 0;
 
     // whether spieler can step on the tile or not
     this.checkSpielerCanStepOnCell = function (targetCell) {
@@ -29,13 +58,10 @@ function Rules(board) {
     // make step
     this.moveSpielerOnCell = function (coords, turnEnded) {
         var spieler = this.board.spielers[this.board.currentSpieler];
-        spieler.x = coords.x;
-        spieler.y = coords.y;
         
         // charge cell's cost
         var cost = this.getResourceCostForTargetCell(spieler, coords);
-        spieler.resource -= cost;
-
+        
         // apply cell's effects
         var cellType = this.board.getCellTypeByRowCol(coords.y, coords.x);
         // sniper!
@@ -47,7 +73,29 @@ function Rules(board) {
         }
         // shelter!
         else if (cellType == this.board.TileShelter) {
+            console.log('step on shelter, choice: ', this.spielerChoiceShelter);
+            if (this.spielerChoiceShelter == 0) {
+                // choice is not made yet
+                this.askSpielerChoiceShelter();
+                return;
+            }
+
+            // recruit?
+            if (this.spielerChoiceShelter == this.SpielerChoicePeople) {
+                spieler.people += this.SpielerPeopleFromShelter;
+            } else if (this.spielerChoiceShelter == this.SpielerChoiceResource) {
+                spieler.resource += Math.floor(spieler.people * this.SpielerResourceFromShelter);
+            }
         }
+
+        // do change coords and charge fee
+        spieler.x = coords.x;
+        spieler.y = coords.y;
+        spieler.resource -= cost;
+
+        // forget last turn variables
+        this.board.spielerDecidedOnEndTurn = 0;
+        this.spielerChoiceShelter = 0;
         
         // step number...
         spieler.curStep = spieler.curStep + 1;
@@ -71,5 +119,18 @@ function Rules(board) {
         if (tile == this.board.TileGrass)
             cost = Math.floor(cost / 2);
         return cost;
+    }
+
+    // ask spieler what he chooses
+    this.askSpielerChoiceShelter = function () {
+        customConfirm('Пополнить запасы либо набрать рекрутов?', 'Сделайте выбор', 'Запасы', 'Рекруты',
+            function (choiceIndex) {
+                console.log('function (choiceIndex) called');
+                board.rules.spielerChoiceShelter = board.rules.SpielerChoiceResource;
+                if (choiceIndex == 1)
+                    board.rules.spielerChoiceShelter = board.rules.SpielerChoicePeople;
+                board.rules.moveSpielerOnCell(board.spielerSelectedCell, board.rules.spielerDecidedOnEndTurn);
+            });
+        console.log('customConfirm called');
     }
 }

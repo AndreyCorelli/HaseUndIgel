@@ -24,6 +24,7 @@ function Board() {
     this.currentSpieler = -1;
     this.spielMode = this.SpielModeEdit;
     this.spielerSelectedCell = new Point(-1, -1);
+    this.spielerDecidedOnEndTurn = 0;
 
     // constants - tile types
     this.TileSand = 0;
@@ -307,10 +308,11 @@ function Board() {
     }
 
     // spieler has realy made his turn
-    this.spielerConfirmedTurn = function () {
+    this.spielerConfirmedTurn = function (spielerDecidedOnEndTurn) {
+        this.spielerDecidedOnEndTurn = spielerDecidedOnEndTurn;
         if (!this.spielerSelectedCell || this.spielerSelectedCell.x < 0) return false;
         // make turn according the Rules
-        this.rules.moveSpielerOnCell(this.spielerSelectedCell, false);
+        this.rules.moveSpielerOnCell(this.spielerSelectedCell, this.spielerDecidedOnEndTurn);
     }
 
     // give turn to the next spieler
