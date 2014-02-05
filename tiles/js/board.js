@@ -25,6 +25,7 @@ function Board() {
     this.spielMode = this.SpielModeEdit;
     this.spielerSelectedCell = new Point(-1, -1);
     this.spielerDecidedOnEndTurn = 0;
+    this.winnerSpieler = 0;
 
     // constants - tile types
     this.TileSand = 0;
@@ -34,6 +35,7 @@ function Board() {
     this.TileStart = 4;
     this.TileFinish = 5;
     this.TileRaiders = 6;
+    this.TileMetro = 7;
 
     this.tileImage = {};
     this.tileImage[this.TileSand] = 'tile_small_sand.png';
@@ -43,6 +45,7 @@ function Board() {
     this.tileImage[this.TileStart] = 'tile_small_start.png';
     this.tileImage[this.TileFinish] = 'tile_small_finish.png';
     this.tileImage[this.TileRaiders] = 'tile_small_raiders.png';
+    this.tileImage[this.TileMetro] = 'tile_small_metro.png';
 
     this.spielerImage = new Array(4);
     this.spielerImage[0] = "spieler_a.png";
@@ -326,5 +329,6 @@ function Board() {
 
     // show the WINNER
     this.showFinalTitles = function (winner) {
+        this.winnerSpieler = winner;
     }
 }

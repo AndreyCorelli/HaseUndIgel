@@ -2,6 +2,7 @@
 
 function Spieler(index) {
     // variables
+    this.name = 'spieler';
     this.index = index;
     this.people = 6;
     this.resource = 60;

@@ -15,14 +15,39 @@
     <script src="js/rules.js"></script>
     <script src="js/board.js"></script>
     <link href="css/styles.css" rel="stylesheet" type="text/css" />
-    
+    <style type="text/css">
+        #startWindow {
+            position: absolute;
+            background-color: white;
+            left: 1px;
+            top: 1px;
+        }
+    </style>
     <script type="text/javascript">
         var board = new Board();
 
-        function initBoard() {
+        function startSpiel() {
+            var spielNames = getSpielerNames();
+            var spielCount = spielNames.length;
+            if (spielCount < 2 || spielCount > 4) {
+                alert('Укажите количество игроков в пределах от 2 до 4');
+                return;
+            }
+
+            // hide the start window
+            $("#startWindow").hide();
+
+            // init the board
             if (typeof boardCells != 'undefined')
                 board.cells = boardCells;
-            board.initSpielers(2);
+
+            board.initSpielers(spielCount);
+
+            // give names
+            for (var i = 0; i < board.spielers.length; i++) {
+                board.spielers[i].name = spielNames[i];
+            }
+
             board.controlPanelIdImgSpieler = 'imgSpieler';
             board.controlPanelIdImgSpielerNext = 'imgSpielerNext';
             board.controlPanelIdBtnMakeTurn = 'btnMakeTurn';
@@ -30,21 +55,37 @@
             board.controlPanelIdLabelResource = 'labelResource';
 
             board.showFinalTitles = function (winner) {
-                $("#popUp").html('Победитель - игрок ' + (winner.index + 1) + '!');
+                $("#popUp").html('Победитель - ' + winner.name + '!');
                 $("#popUp").dialog();
+                $("#controlPanel").hide();
             }
 
             board.drawBoard();
         }
 
+        function getSpielerNames() {
+            var names = [];
+            var lines = $("#tbSpielerNames").val().split('\n');
+            for (var i = 0; i < lines.length; i++) {
+                var name = $.trim(lines[i]);
+                if (name && name.length > 0)
+                    names.push(name);
+            }
+            return names;
+        }
+
         function confirmTurn(shouldEnd) {
             board.spielerConfirmedTurn(shouldEnd);
+            if (board.winnerSpieler) {
+                // show winner and fin
+                $("#controlPanel").hide();
+            }
         }
     </script>
 </head>
-<body onload="initBoard()">
+<body onload="">
     <!-- Control panel -->
-    <div>
+    <div id="controlPanel">
         <img src="" id="imgSpieler" /> 
         <img src="pic/decor/animated_arrow_right.gif" />
         <img src="" id="imgSpielerNext" style="opacity: 0.3" />
@@ -58,6 +99,23 @@
     </div>
     
     <div id="boardCanvas">
+    </div>
+
+    <!-- Start window -->
+    <div id="startWindow">
+        <table style="border-width: 0px;" cellpadding="12">
+            <tr>
+                <td colspan="2">Имена игроков <br />
+                    <textarea id="tbSpielerNames" style="width: 200px; height: 150px;">
+                        Player 1
+                        Player 2
+                    </textarea>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2"><a href="#" class="buttonGo" onclick="startSpiel()">Начать</a></td>
+            </tr>
+        </table>
     </div>
 
     <div id="popUp" style="display: none"></div>

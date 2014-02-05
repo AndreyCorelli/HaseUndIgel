@@ -33,6 +33,7 @@ function Rules(board) {
     this.resourcePerCell = [1, 2, 3];
     this.SpielerPeopleFromShelter = 2;
     this.SpielerResourceFromShelter = 2;
+    this.co
 
     // spieler choice
     this.spielerChoiceShelter = 0;
@@ -42,6 +43,11 @@ function Rules(board) {
         var spieler = this.board.spielers[this.board.currentSpieler];
         var spielerOldCell = this.board.getCellTypeByRowCol(spieler.y, spieler.x);
         var cellType = this.board.getCellTypeByRowCol(targetCell.y, targetCell.x);
+
+        // almost free jumps from metro to metro
+        if (cellType = this.board.TileMetro && spielerOldCell == this.board.TileMetro) {
+            return this.getResourceCostForTargetCell(spieler, targetCell) < spieler.resource;
+        }
 
         // check range and resources
         // if it is not a metro cell - range should be 1 or null
@@ -141,8 +147,25 @@ function Rules(board) {
 
     // how much resource needed to step on cell?
     this.getResourceCostForTargetCell = function (spieler, coords) {
-        var cost = this.resourcePerCell[spieler.curStep - 1] * spieler.people;
         var tile = this.board.getCellTypeByRowCol(coords.y, coords.x);
+        // stay on cell?
+        if (coords.x == spieler.x && coords.y == spieler.y) {
+            if (tile == this.board.TileGrass)
+                cost = -spieler.people;
+        }
+
+        // move on metro?
+        // 1 res per cell
+        if (tile == this.board.TileMetro) {
+            var oldTile = this.board.getCellTypeByRowCol(spieler.y, spieler.x);
+            if (oldTile == this.board.TileMetro)
+                return Math.max(Math.abs(spieler.y - coords.y),
+                    Math.abs(spieler.x - coords.x));
+        }
+
+        // pay per move
+        var cost = this.resourcePerCell[spieler.curStep - 1] * spieler.people;
+        
         if (tile == this.board.TileGrass)
             cost = Math.floor(cost / 2);
         return cost;
