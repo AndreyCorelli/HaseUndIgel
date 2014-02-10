@@ -74,6 +74,8 @@ function Board() {
     this.controlPanelIdBtnMakeTurn = '';
     this.controlPanelIdLabelPeople = '';
     this.controlPanelIdLabelResource = '';
+    this.controlPanelHelpContainer = '';
+    this.controlPanelLabelSpielerTitle = '';
 
     // draw board as is
     this.drawBoard = function () {
@@ -183,6 +185,11 @@ function Board() {
             if (nextSpieler == this.spielers.length) nextSpieler = 0;
             imgSpieler = $('img#' + this.controlPanelIdImgSpielerNext);
             imgSpieler.attr("src", 'pic/' + this.spielerImage[nextSpieler]);
+
+            if (this.controlPanelLabelSpielerTitle) {
+                var lblSpielerName = $('#' + this.controlPanelLabelSpielerTitle);
+                lblSpielerName.text(this.spielers[this.currentSpieler].name);
+            }
         }
 
         // resources
@@ -330,5 +337,11 @@ function Board() {
     // show the WINNER
     this.showFinalTitles = function (winner) {
         this.winnerSpieler = winner;
+    }
+
+    // show hint (help)
+    this.showHelpOnCell = function (textMsg) {
+        if (!this.controlPanelHelpContainer) return;
+        $('#' + this.controlPanelHelpContainer).text(textMsg);
     }
 }

@@ -44,6 +44,8 @@ function Rules(board) {
         var spielerOldCell = this.board.getCellTypeByRowCol(spieler.y, spieler.x);
         var cellType = this.board.getCellTypeByRowCol(targetCell.y, targetCell.x);
 
+        this.showHintOnCell(spieler, targetCell);
+
         // almost free jumps from metro to metro
         if (cellType = this.board.TileMetro && spielerOldCell == this.board.TileMetro) {
             return this.getResourceCostForTargetCell(spieler, targetCell) < spieler.resource;
@@ -56,11 +58,60 @@ function Rules(board) {
 
         if (!isAdjacent) return false;
 
+        // stay on cell - first turn only?
+        //if (spieler.y == targetCell.y && spieler.x == targetCell.x) {        }
+
         // check resource cost
         var cost = this.getResourceCostForTargetCell(spieler, targetCell);
         if (cost > spieler.resource) return false;
 
         return true;
+    }
+
+    // show hint when user steps on a cell
+    this.showHintOnCell = function (spieler, targetCell) {
+        var cost = this.getResourceCostForTargetCell(spieler, targetCell);
+        var cellType = this.board.getCellTypeByRowCol(targetCell.y, targetCell.x);
+        var costStr = (cost < 0 ? ' Вы получите ' : ' Вы отдадите ') + cost + ' ед. ресурсов';
+
+        if (spieler.x == targetCell.x && spieler.y == targetCell.y) {
+            this.board.showHelpOnCell('Оставаясь на клетке, вы получите по единице ресурсов на члена отряда (по две ед. стоя на "чистой" клетке). ' + costStr);
+            return;
+        }
+
+        if (cellType == this.board.TileMetro) {
+            this.board.showHelpOnCell('Вход в метро. С этой клетки вы можете перейти на любую клетку ' +
+                'метро, потратив столько ед. ресурсов, сколько клеток отделяет вас от выбранной клетки. Если ваш отряд меньше 6, Сталкер забирает одного члена отряда. ' + costStr);
+            return;
+        }
+
+        if (cellType == this.board.TileSniper) {
+            this.board.showHelpOnCell('Поле контролирует снайпер. Проходя клетку, вы теряете одного члена отряда и освобождаете поле от снайпера.' + costStr);
+            return;
+        }
+
+        if (cellType == this.board.TileRaiders) {
+            this.board.showHelpOnCell('Поле занято бандитами! Большой отряд (свыше 8 человек) пройдет свободно. Средний отряд (более 5 человек) потеряет одного, маленький отряд - двоих. ' + costStr);
+            return;
+        }
+
+        if (cellType == this.board.TileShelter) {
+            this.board.showHelpOnCell('Убежище удерживает немногочисленный отряд. Вы можете отобрать у них припасы (' + this.SpielerResourceFromShelter +
+                ' ед. на каждого в отряде) либо присоединить ' + this.SpielerPeopleFromShelter + ' человек в отряд. ' + costStr);
+            return;
+        }
+
+        if (cellType == this.board.TileGrass) {
+            this.board.showHelpOnCell('"Чистая" клетка. Ход на такую клетку стоит в два раза меньше ресурсов (половина ед. ресурса на каждого члена отряда за первый ход, единица за второй и 3/2 ед. за третий ход). ' + costStr);
+            return;
+        }
+
+        if (cellType == this.board.TileSand) {
+            this.board.showHelpOnCell('Пустошь. Ход на такую клетку стоит единицу ресурса на каждого члена отряда за первый ход, две единицы за второй и 3 ед. за третий ход. ' + costStr);
+            return;
+        }
+
+        this.board.showHelpOnCell(costStr);
     }
 
     // make step
@@ -110,11 +161,18 @@ function Rules(board) {
             } else
                 spieler.people = 0;
         }
+        // metro!
+        else if (cellType == this.board.TileMetro) {
+            if (this.board.getCellTypeByRowCol(spieler.y, spieler.x) != this.board.TileMetro)
+                if (spieler.people < 6)
+                    spieler.people -= 1; // Stalker has charged his fee
+        }
 
         // do change coords and charge fee
         spieler.x = coords.x;
         spieler.y = coords.y;
         spieler.resource -= cost;
+        this.board.spielerSelectedCell = new Point(-1, -1);
 
         // forget last turn variables
         this.board.spielerDecidedOnEndTurn = 0;
@@ -148,10 +206,12 @@ function Rules(board) {
     // how much resource needed to step on cell?
     this.getResourceCostForTargetCell = function (spieler, coords) {
         var tile = this.board.getCellTypeByRowCol(coords.y, coords.x);
+
         // stay on cell?
         if (coords.x == spieler.x && coords.y == spieler.y) {
             if (tile == this.board.TileGrass)
-                cost = -spieler.people;
+                return -2 * spieler.people;
+            return spieler.people;;
         }
 
         // move on metro?

@@ -22,6 +22,13 @@
             left: 1px;
             top: 1px;
         }
+
+        #hintDiv {
+            position: absolute;
+            background-color: white;
+            left: 1px;
+            top: 650px;
+        }
     </style>
     <script type="text/javascript">
         var board = new Board();
@@ -53,6 +60,8 @@
             board.controlPanelIdBtnMakeTurn = 'btnMakeTurn';
             board.controlPanelIdLabelPeople = 'labelPeople';
             board.controlPanelIdLabelResource = 'labelResource';
+            board.controlPanelHelpContainer = 'hintDiv';
+            board.controlPanelLabelSpielerTitle = 'labelCurSpielerName';
 
             board.showFinalTitles = function (winner) {
                 $("#popUp").html('Победитель - ' + winner.name + '!');
@@ -86,19 +95,30 @@
 <body onload="">
     <!-- Control panel -->
     <div id="controlPanel">
-        <img src="" id="imgSpieler" /> 
-        <img src="pic/decor/animated_arrow_right.gif" />
-        <img src="" id="imgSpielerNext" style="opacity: 0.3" />
+        <table cellpadding="0" cellspacing="0" class="controlTableStat">
+            <tr><td>
+                <img src="" id="imgSpieler" /> 
+                <img src="pic/decor/animated_arrow_right.gif" />
+                <img src="" id="imgSpielerNext" style="opacity: 0.3" />
+            </td></tr>
+            <tr><td id="labelCurSpielerName">
+            
+            </td></tr>
+        </table>        
         
         <table cellpadding="0" cellspacing="0" class="controlTableStat">
-            <tr><td>people:</td><td><span id="labelPeople"></span></td></tr>
-            <tr><td>resource:</td><td><span id="labelResource"></span></td></tr>
+            <tr><td>отряд:</td><td><span id="labelPeople"></span></td></tr>
+            <tr><td>ресурсы:</td><td><span id="labelResource"></span></td></tr>
         </table>
-        <label id="btnMakeTurn" class="buttonGo" onclick="confirmTurn(false)">Go!</label>
-        <label id="btnFinishTurn" class="buttonGo" onclick="confirmTurn(true)">Stop</label>
+        <label id="btnMakeTurn" class="buttonGo" onclick="confirmTurn(false)">Ход</label>
+        <label id="btnFinishTurn" class="buttonGo" onclick="confirmTurn(true)">Стоп</label>
     </div>
     
     <div id="boardCanvas">
+    </div>
+
+    <div id="hintDiv">
+        Выберите ячейку
     </div>
 
     <!-- Start window -->
@@ -106,9 +126,9 @@
         <table style="border-width: 0px;" cellpadding="12">
             <tr>
                 <td colspan="2">Имена игроков <br />
-                    <textarea id="tbSpielerNames" style="width: 200px; height: 150px;">
-                        Player 1
-                        Player 2
+                    <textarea id="tbSpielerNames" style="width: 350px; height: 180px;">
+                        P.J. Fry
+                        B. B. Rodriguez
                     </textarea>
                 </td>
             </tr>
